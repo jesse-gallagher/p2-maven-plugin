@@ -2,21 +2,20 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.reficio</groupId>
+    <groupId>org.openntf.maven</groupId>
     <artifactId>p2-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
-    <version>1.4.1-SNAPSHOT</version>
-    <name>p2-maven-plugin</name>
-    <url>http://projects.reficio.org/${project.artifactId}/${project.version}</url>
+    <version>2.0.0</version>
+    
     <description>Maven plugin for the automation of jars wrapping and p2 site generation</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <maven.version>3.3.9</maven.version>
+        <maven.version>3.6.3</maven.version>
         <maven.annotations.version>3.5</maven.annotations.version>
-        <maven.plugin.plugin.version>3.3</maven.plugin.plugin.version>
+        <maven.plugin.plugin.version>3.6.0</maven.plugin.plugin.version>
         <tycho.version>1.0.0</tycho.version>
 
         <sonatype.aether.version>1.13.1</sonatype.aether.version>
@@ -25,7 +24,7 @@
         <wagon.version>2.2</wagon.version>
         <gmaven.version>2.1.1</gmaven.version>
         <gmaven.provider.selection>2.0</gmaven.provider.selection>
-        <groovy.version>2.5.8</groovy.version>
+        <groovy.version>3.0.6</groovy.version>
 
         <clover.version>3.3.0</clover.version>
         <clover.license>/private/reficio/clover.license</clover.license>
@@ -54,24 +53,17 @@
             </roles>
             <timezone>+1</timezone>
         </developer>
+        <developer>
+            <name>Jesse Gallagher</name>
+            <email>jesse@frostillic.us</email>
+            <organization>OpenNTF</organization>
+            <organizationUrl>www.openntf.org</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
     </developers>
-
-    <issueManagement>
-        <system>github</system>
-        <url>https://github.com/reficio/p2-maven-plugin/issues</url>
-    </issueManagement>
-
-    <scm>
-        <connection>scm:git:git://github.com/reficio/p2-maven-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:reficio/p2-maven-plugin.git</developerConnection>
-        <url>http://github.com/reficio/p2-maven-plugin</url>
-    </scm>
-
-    <ciManagement>
-        <system>jenkins</system>
-        <url>https://reficio.ci.cloudbees.com/job/p2-maven-plugin/</url>
-    </ciManagement>
-
+   
     <dependencies>
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -95,7 +87,7 @@
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-plugin-api</artifactId>
             <version>${maven.version}</version>
-            <scope>provided</scope>
+<!--             <scope>provided</scope> -->
         </dependency>
         <!-- dependencies to annotations -->
         <dependency>
@@ -142,7 +134,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.5</version>
+            <version>2.8.0</version>
         </dependency>
         <dependency>
             <groupId>commons-collections</groupId>
@@ -157,12 +149,12 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>24.1.1</version>
+            <version>24.1.1-jre</version>
         </dependency>
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>biz.aQute.bnd</artifactId>
-            <version>3.3.0</version>
+            <version>5.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -246,7 +238,7 @@
             <plugin>
                 <groupId>org.codehaus.gmavenplus</groupId>
                 <artifactId>gmavenplus-plugin</artifactId>
-                <version>1.8.0</version>
+                <version>1.11.0</version>
                 <configuration>
 <!--                    <source/>-->
 <!--                    <providerSelection>${gmaven.provider.selection}</providerSelection>-->
@@ -273,7 +265,7 @@
             <plugin>
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-component-metadata</artifactId>
-                <version>1.5.5</version>
+                <version>2.1.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -285,10 +277,10 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.5.1</version>
+                <version>3.8.1</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                     <encoding>UTF-8</encoding>
                     <excludes>
                         <exclude>**/src/test/integration/**/*.*</exclude>
@@ -340,7 +332,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.3.1</version>
+                <version>3.1.2</version>
                 <executions>
                     <execution>
                         <id>attach-tests</id>
@@ -353,7 +345,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>2.1.2</version>
+                <version>3.2.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -376,7 +368,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <source>1.6</source>
+                    <source>1.8</source>
                     <quiet>true</quiet>
                     <links>
                         <link>http://docs.oracle.com/javase/6/docs/api/</link>
@@ -386,7 +378,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
-                <version>3.3</version>
+                <version>3.7.1</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.doxia</groupId>
@@ -454,7 +446,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
+                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <id>modify-markdown</id>
@@ -478,18 +470,41 @@
                     </execution>
                 </executions>
             </plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.0.0-M3</version>
+				<executions>
+					<execution>
+						<id>enforce-versions</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireMavenVersion>
+									<version>3.3.9</version>
+								</requireMavenVersion>
+								<requireJavaVersion>
+									<version>1.8</version>
+								</requireJavaVersion>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
         </plugins>
 
         <extensions>
             <extension>
                 <groupId>org.apache.maven.wagon</groupId>
                 <artifactId>wagon-ftp</artifactId>
-                <version>2.2</version>
+                <version>3.4.1</version>
             </extension>
             <extension>
                 <groupId>org.apache.maven.wagon</groupId>
                 <artifactId>wagon-ssh</artifactId>
-                <version>2.2</version>
+                <version>3.4.1</version>
             </extension>
         </extensions>
     </build>
@@ -584,7 +599,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.4</version>
+                        <version>1.6</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -611,7 +626,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>findbugs-maven-plugin</artifactId>
-                        <version>2.4.0</version>
+                        <version>3.0.5</version>
                         <executions>
                             <execution>
                                 <id>findbugs</id>
@@ -633,14 +648,14 @@
         <profile>
             <id>it</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <activeByDefault>false</activeByDefault>
             </activation>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-invoker-plugin</artifactId>
-                        <version>1.10</version>
+                        <version>3.2.1</version>
                         <dependencies>
                             <dependency>
                                 <groupId>org.codehaus.groovy</groupId>
@@ -683,19 +698,11 @@
         </profile>
     </profiles>
 
-    <repositories>
-        <!-- required to get the reficio-skin -->
-        <repository>
-            <id>reficio</id>
-            <url>http://repo.reficio.org/maven/</url>
-        </repository>
-    </repositories>
-
     <distributionManagement>
         <repository>
-            <id>reficio</id>
-            <name>Reficio Maven Repository</name>
-            <url>scp://${reficio.server}/var/www/repo/maven</url>
+			<id>artifactory.openntf.org</id>
+			<name>artifactory.openntf.org</name>
+			<url>https://artifactory.openntf.org/openntf</url>
         </repository>
     </distributionManagement>
 

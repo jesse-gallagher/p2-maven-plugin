@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Repository;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.BuildPluginManager;
@@ -60,6 +61,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -201,6 +203,12 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
      */
     @Parameter(readonly = true)
     private List<P2Artifact> features;
+    
+    /**
+     * A list of artifacts that define eclipse features in P2 repositories
+     */
+    @Parameter(readonly = true)
+    private List<EclipseArtifact> p2features;
 
     /**
      * A list of Eclipse artifacts that should be downloaded from P2 repositories
@@ -359,6 +367,23 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
 	        		this.createFeature(p2Feature);
 	        }
         }
+        
+        if(p2features != null) {
+        	for(EclipseArtifact artifact : p2features) {
+        		String[] idparts = StringUtils.split(artifact.getId(), ':');
+    			if(idparts.length != 2) {
+    				throw new IllegalArgumentException("Illegal artifact ID; expected format is bundleId:version - " + artifact.getId());
+    			}
+    			try {
+	    			File featureFile = JarUtils.findFeature(project, idparts[0], idparts[1]);
+	    			File outputFile = new File(featuresDestinationFolder, featureFile.getName());
+	    			JarUtils.adjustFeatureXml(featureFile, outputFile, this.bundlesDestinationFolder, log, timestamp, project);
+    			} catch(IOException e) {
+    				throw new UncheckedIOException(e);
+    			}
+    			
+        	}
+        }
     }
 
 
@@ -442,12 +467,12 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
 				p2featureDefinition.setVersion( Utils.mavenToEclipse(p2featureDefinition.getVersion(), timestamp) );
 
 				boolean unpack = p2featureDefinition.getUnpack();
-				FeatureBuilder featureBuilder = new FeatureBuilder(p2featureDefinition, bi, false, unpack, timestamp);
+				FeatureBuilder featureBuilder = new FeatureBuilder(p2featureDefinition, bi, false, unpack, timestamp, project);
 				featureBuilder.generate(this.featuresDestinationFolder);
 
 				if ( p2featureDefinition.getGenerateSourceFeature()) {
 					// build also the source feature. (But do not unpack. Should not be neccessary)
-					FeatureBuilder sourceFeatureBuilder = new FeatureBuilder(p2featureDefinition, bi, true, false, timestamp);
+					FeatureBuilder sourceFeatureBuilder = new FeatureBuilder(p2featureDefinition, bi, true, false, timestamp, project);
 					sourceFeatureBuilder.generate(this.featuresDestinationFolder);
 				}
 			} else {
@@ -466,9 +491,10 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
 			}
 
 			log.info("Created feature "+p2featureDefinition.getId());
-
+    	} catch(RuntimeException e) {
+    		throw e;
     	} catch (Exception e) {
-    		log.error(e);
+    		throw new RuntimeException(e);
     	}
     }
 
@@ -489,7 +515,7 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
             File inputFile = bundlerRequest.getBinaryInputFile();
             File outputFile = bundlerRequest.getBinaryOutputFile();
             //This will also copy the input to the output
-            JarUtils.adjustFeatureXml(inputFile, outputFile, this.bundlesDestinationFolder, log, timestamp);
+            JarUtils.adjustFeatureXml(inputFile, outputFile, this.bundlesDestinationFolder, log, timestamp, project);
             log.info("Copied " + inputFile + " to " + outputFile);
         } catch (Exception ex) {
             throw new RuntimeException("Error while bundling jar or source: " + bundlerRequest.getBinaryInputFile().getName(), ex);

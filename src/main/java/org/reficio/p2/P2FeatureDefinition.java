@@ -47,6 +47,10 @@ public class P2FeatureDefinition  {
 	private boolean generateSourceFeature;
 	private List<P2Artifact> artifacts;
 	private boolean unpack;
+	/**
+	 * @since 2.0.0
+	 */
+	private List<EclipseArtifact> p2;
 	
 	
 	public File getFeatureFile() {
@@ -127,6 +131,16 @@ public class P2FeatureDefinition  {
 	}
 	public void setUnpack(boolean unpack) {
 		this.unpack = unpack;
+	}
+	
+	public List<EclipseArtifact> getP2() {
+		if(p2 == null) {
+			this.p2 = new ArrayList<>();
+		}
+		return p2;
+	}
+	public void setP2(List<EclipseArtifact> p2) {
+		this.p2 = p2;
 	}
 	
 }
