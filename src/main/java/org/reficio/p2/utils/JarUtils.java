@@ -26,13 +26,20 @@ import aQute.bnd.osgi.Resource;
 import edu.emory.mathcs.backport.java.util.Arrays;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.maven.model.Repository;
 import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.project.MavenProject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.google.common.io.Files;
+
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.jar.Attributes;
@@ -78,7 +85,7 @@ public class JarUtils {
      * @param timestamp - timestamp
      *
      */
-    public static void adjustFeatureXml(File inputFile, File outputFile, File pluginDir, Log log, String timestamp) {
+    public static void adjustFeatureXml(File inputFile, File outputFile, File pluginDir, Log log, String timestamp, MavenProject mavenProject) {
         Jar jar = null;
         File newXml = null;
         try {
@@ -87,7 +94,7 @@ public class JarUtils {
 	        Document featureSpec = XmlUtils.parseXml(res.openInputStream());
 	        
 	        adjustFeatureQualifierVersionWithTimestamp(featureSpec, timestamp);
-	        adjustFeaturePluginData(featureSpec, pluginDir, log);
+	        adjustFeaturePluginData(featureSpec, pluginDir, log, mavenProject);
             
 	        File temp = new File(outputFile.getParentFile(),"temp");
 	        temp.mkdir();
@@ -131,7 +138,7 @@ public class JarUtils {
      *
      * @throws IOException - an exception
 	 */
-    public static void adjustFeaturePluginData(Document featureSpec, File pluginDir, Log log) throws IOException {
+    public static void adjustFeaturePluginData(Document featureSpec, File pluginDir, Log log, MavenProject mavenProject) throws IOException {
 	        //get list of all plugins
 	        NodeList plugins = featureSpec.getElementsByTagName("plugin");
 	        for(int i=0; i<plugins.getLength(); ++i) {
@@ -140,6 +147,31 @@ public class JarUtils {
 		        	Element el = (Element)n;
 		        	String pluginId = el.getAttribute("id");
 		        	File[] files = findFiles(pluginDir, pluginId);
+		        	if(files.length == 0) {
+		        		// Look through the project's local p2 repositories
+		        		for(Repository repo : mavenProject.getRepositories()) {
+		        			// TODO support remote repos
+		        			if("p2".equals(repo.getLayout()) && repo.getUrl().startsWith("file:/")) { //$NON-NLS-1$ //$NON-NLS-2$
+		        				try {
+									File repoPluginDir = new File(new File(new URI(repo.getUrl())), "plugins");
+									File[] repoPlugins = findFiles(repoPluginDir, pluginId);
+									if(repoPlugins.length > 0) {
+										// Then we found a suitable match, we'll assume
+										Arrays.sort(files, fileComparator);
+										File lastPlugin = repoPlugins[repoPlugins.length-1];
+										// Copy it into our destination
+										File dest = new File(pluginDir, lastPlugin.getName());
+										Files.copy(lastPlugin, dest);
+										files = new File[] { dest };
+										break; 
+									}
+								} catch (URISyntaxException e) {
+									throw new IOException(e);
+								}
+		        			}
+		        		}
+		        	}
+		        	
 		        	if (files.length == 0) {
 		        		log.error("Cannot find plugin "+pluginId);
 		        	} else {
@@ -160,7 +192,7 @@ public class JarUtils {
     	 return pluginDir.listFiles(new FilenameFilter() {
 				@Override
 				public boolean accept(File dir, String name) {
-					return name.startsWith(pluginId) && name.endsWith(".jar");
+					return name.startsWith(pluginId + "_") && name.endsWith(".jar");
 				}
 			});
     }
