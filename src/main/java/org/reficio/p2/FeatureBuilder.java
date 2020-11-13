@@ -62,7 +62,7 @@ public class FeatureBuilder {
 	//cache this so that the same timestamp is used
 	private String featureTimeStamp;
 	/**
-	 * @since 1.4.1
+	 * @since 2.0.0
 	 */
 	private final MavenProject mavenProject;
 	
@@ -130,10 +130,10 @@ public class FeatureBuilder {
 	}
 	
 	/**
-	 * @since 1.4.1
+	 * @since 2.0.0
 	 */
 	private void resolveExistingP2Artifacts(Document xmlDoc, Element featureElement, File destinationFolder) throws IOException {
-		File pluginsDir = new File(destinationFolder.getParentFile(), "plugins");
+		File pluginsDir = new File(destinationFolder.getParentFile(), "plugins"); //$NON-NLS-1$
 		for(EclipseArtifact artifact : p2FeatureDefintion.getP2()) {
 			String[] idparts = StringUtils.split(artifact.getId(), ':');
 			if(idparts.length != 2) {

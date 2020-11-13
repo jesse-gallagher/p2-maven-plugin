@@ -48,7 +48,7 @@ public class P2FeatureDefinition  {
 	private List<P2Artifact> artifacts;
 	private boolean unpack;
 	/**
-	 * @since 1.4.1
+	 * @since 2.0.0
 	 */
 	private List<EclipseArtifact> p2;
 	
