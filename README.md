@@ -9,7 +9,8 @@ The original project readme is available as [README-orig.md](README-orig.md).
 ### Features
 
 - Added resolution of features from available `p2`-layout repositories when the protocol is "file"
-- Adjust plugin resolution to be a bit more correct
+- Adjust plugin resolution to be a bit more correct (previously it would match `com.foo.bar` to a plugin named `com.foo.bar.baz`)
+- Added ability to specify p2 artifacts in `featureDefinition` blocks
 
 ### Minor Changes
 
