@@ -41,6 +41,9 @@ target
 *.iws
 *.iml
 .DS_Store
+.project
+.classpath
+.settings/
 
 
 src/site/markdown/*.*
