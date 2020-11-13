@@ -39,7 +39,6 @@ import com.google.common.io.Files;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.jar.Attributes;
