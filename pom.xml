@@ -2,12 +2,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.reficio</groupId>
+    <groupId>org.openntf.maven</groupId>
     <artifactId>p2-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
     <version>1.4.1-SNAPSHOT</version>
     <name>p2-maven-plugin</name>
-    <url>http://projects.reficio.org/${project.artifactId}/${project.version}</url>
     <description>Maven plugin for the automation of jars wrapping and p2 site generation</description>
 
     <properties>
@@ -54,24 +53,17 @@
             </roles>
             <timezone>+1</timezone>
         </developer>
+        <developer>
+            <name>Jesse Gallagher</name>
+            <email>jesse@frostillic.us</email>
+            <organization>OpenNTF</organization>
+            <organizationUrl>www.openntf.org</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
     </developers>
-
-    <issueManagement>
-        <system>github</system>
-        <url>https://github.com/reficio/p2-maven-plugin/issues</url>
-    </issueManagement>
-
-    <scm>
-        <connection>scm:git:git://github.com/reficio/p2-maven-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:reficio/p2-maven-plugin.git</developerConnection>
-        <url>http://github.com/reficio/p2-maven-plugin</url>
-    </scm>
-
-    <ciManagement>
-        <system>jenkins</system>
-        <url>https://reficio.ci.cloudbees.com/job/p2-maven-plugin/</url>
-    </ciManagement>
-
+   
     <dependencies>
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -708,19 +700,11 @@
         </profile>
     </profiles>
 
-    <repositories>
-        <!-- required to get the reficio-skin -->
-<!--         <repository> -->
-<!--             <id>reficio</id> -->
-<!--             <url>http://repo.reficio.org/maven/</url> -->
-<!--         </repository> -->
-    </repositories>
-
     <distributionManagement>
         <repository>
-            <id>reficio</id>
-            <name>Reficio Maven Repository</name>
-            <url>scp://${reficio.server}/var/www/repo/maven</url>
+            <id>openntf</id>
+            <name>OpenNTF Maven Repository</name>
+            <url>https://artifactory.openntf.org/openntf</url>
         </repository>
     </distributionManagement>
 
