@@ -23,9 +23,9 @@ import aQute.bnd.osgi.Analyzer;
 import aQute.bnd.osgi.FileResource;
 import aQute.bnd.osgi.Jar;
 import aQute.bnd.osgi.Resource;
-import edu.emory.mathcs.backport.java.util.Arrays;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Repository;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
@@ -39,12 +39,17 @@ import com.google.common.io.Files;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -139,13 +144,14 @@ public class JarUtils {
 	 */
     public static void adjustFeaturePluginData(Document featureSpec, File pluginDir, Log log, MavenProject mavenProject) throws IOException {
 	        //get list of all plugins
+    	
 	        NodeList plugins = featureSpec.getElementsByTagName("plugin");
 	        for(int i=0; i<plugins.getLength(); ++i) {
 	        	Node n = plugins.item(i);
 	        	if (n instanceof Element) {
 		        	Element el = (Element)n;
 		        	String pluginId = el.getAttribute("id");
-		        	File pluginFile = findPlugin(pluginDir, mavenProject, pluginId);
+		        	File pluginFile = findPlugin(pluginDir, mavenProject, pluginId, el.getAttribute("version")); //$NON-NLS-1$
 		        	
 		        	if (pluginFile == null) {
 		        		log.error("Cannot find plugin "+pluginId);
@@ -162,42 +168,84 @@ public class JarUtils {
     /**
      * @since 1.4.1
      */
-    public static File findPlugin(File projectPluginDir, MavenProject mavenProject, String pluginId) throws IOException {
-    	// TODO allow for restriction by version
-    	File[] files = findFiles(projectPluginDir, pluginId);
-    	if(files.length == 0) {
-    		// Look through the project's local p2 repositories
-    		for(Repository repo : mavenProject.getRepositories()) {
-    			// TODO support remote repos
-    			if("p2".equals(repo.getLayout()) && repo.getUrl().startsWith("file:/")) { //$NON-NLS-1$ //$NON-NLS-2$
-    				try {
-						File repoPluginDir = new File(new File(new URI(repo.getUrl())), "plugins");
-						File[] repoPlugins = findFiles(repoPluginDir, pluginId);
-						if(repoPlugins.length > 0) {
-							// Then we found a suitable match, we'll assume
-							Arrays.sort(files, fileComparator);
-							File lastPlugin = repoPlugins[repoPlugins.length-1];
-							// Copy it into our destination
-							File dest = new File(projectPluginDir, lastPlugin.getName());
-							Files.copy(lastPlugin, dest);
-							files = new File[] { dest };
-							break; 
-						}
-					} catch (URISyntaxException e) {
-						throw new IOException(e);
-					}
-    			}
-    		}
-    	}
+    public static File findPlugin(File projectPluginDir, MavenProject mavenProject, String pluginId, String pluginVersion) throws IOException {
+    	List<File> files = new ArrayList<>();
+    	files.addAll(Arrays.asList(findFiles(projectPluginDir, pluginId)));
+		// Look through the project's local p2 repositories
+		for(Repository repo : mavenProject.getRepositories()) {
+			// TODO support remote repos
+			if("p2".equals(repo.getLayout()) && repo.getUrl().startsWith("file:/")) { //$NON-NLS-1$ //$NON-NLS-2$
+				try {
+					File repoPluginDir = new File(new File(new URI(repo.getUrl())), "plugins"); //$NON-NLS-1$
+					files.addAll(Arrays.asList(findFiles(repoPluginDir, pluginId)));
+				} catch (URISyntaxException e) {
+					throw new IOException(e);
+				}
+			}
+		}
     	
-    	if (files.length == 0) {
+    	if (files.isEmpty()) {
     		return null;
     	} else {
-    		//in case more than one plugin with same id
-    		Arrays.sort(files,fileComparator);
-    		//File firstFile = files[0];
-    		File lastFile = files[files.length-1];
-    		return lastFile;
+    		File pluginFile;
+    		if(StringUtils.isEmpty(pluginVersion) || "0.0.0".equals(pluginVersion)) { //$NON-NLS-1$
+        		//in case more than one plugin with same id
+        		Collections.sort(files,fileComparator);
+        		pluginFile = files.get(files.size()-1);	
+    		} else {
+    			// Find an exact match
+    			pluginFile = files.stream()
+    				.filter(f -> f.getName().equals(pluginId + '_' + pluginVersion + ".jar")) //$NON-NLS-1$
+    				.findFirst()
+    				.orElseThrow(() -> new IllegalStateException("Unable to find plugin " + pluginId + ":" + pluginVersion));
+    		}
+    		if(!pluginFile.getParentFile().equals(projectPluginDir)) {
+    			File destPlugin = new File(projectPluginDir, pluginFile.getName());
+    			Files.copy(pluginFile, destPlugin);
+    			return destPlugin;
+    		} else {
+    			return pluginFile;
+    		}
+    	}
+    }
+    /**
+     * Locates the named feature in the file:/ p2 repositories known to this project
+     * 
+     * @since 1.4.1
+     */
+    public static File findFeature(MavenProject mavenProject, String featureId, String featureVersion) throws IOException {
+    	List<File> files = new ArrayList<>();
+    	// Look through the project's local p2 repositories
+		for(Repository repo : mavenProject.getRepositories()) {
+			// TODO support remote repos
+			if("p2".equals(repo.getLayout()) && repo.getUrl().startsWith("file:/")) { //$NON-NLS-1$ //$NON-NLS-2$
+				try {
+					File repoFeatureDir = new File(new File(new URI(repo.getUrl())), "features"); //$NON-NLS-1$
+					if(repoFeatureDir.exists()) {
+						files.addAll(Arrays.asList(findFiles(repoFeatureDir, featureId)));
+					}
+				} catch (URISyntaxException e) {
+					throw new IOException(e);
+				}
+			}
+		}
+    	
+    	if (files.isEmpty()) {
+    		throw new IllegalStateException("Unable to find feature " + featureId + ":" + featureVersion);
+    	} else {
+    		File pluginFile;
+    		if(StringUtils.isEmpty(featureVersion) || "0.0.0".equals(featureVersion)) {
+        		//in case more than one plugin with same id
+        		Collections.sort(files,fileComparator);
+        		pluginFile = files.get(files.size()-1);	
+    		} else {
+    			// Find an exact match
+    			pluginFile = files.stream()
+    				.filter(f -> f.getName().equals(featureId + '_' + featureVersion + ".jar")) //$NON-NLS-1$
+    				.findFirst()
+    				.orElseThrow(() -> new IllegalStateException("Unable to find feature " + featureId + ":" + featureVersion));
+    		}
+			return pluginFile;
     	}
     }
     

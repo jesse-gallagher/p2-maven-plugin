@@ -139,7 +139,7 @@ public class FeatureBuilder {
 			if(idparts.length != 2) {
 				throw new IllegalArgumentException("Illegal artifact ID; expected format is bundleId:version - " + artifact.getId());
 			}
-			File plugin = JarUtils.findPlugin(pluginsDir, mavenProject, idparts[0]);
+			File plugin = JarUtils.findPlugin(pluginsDir, mavenProject, idparts[0], idparts[1]);
 			if(plugin == null) {
 				throw new IllegalStateException("Unable to resolve P2 artifact " + artifact.getId());
 			}

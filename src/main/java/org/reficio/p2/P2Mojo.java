@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Repository;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.BuildPluginManager;
@@ -60,6 +61,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -201,6 +203,12 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
      */
     @Parameter(readonly = true)
     private List<P2Artifact> features;
+    
+    /**
+     * A list of artifacts that define eclipse features in P2 repositories
+     */
+    @Parameter(readonly = true)
+    private List<EclipseArtifact> p2features;
 
     /**
      * A list of Eclipse artifacts that should be downloaded from P2 repositories
@@ -358,6 +366,23 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
 	        for (P2FeatureDefinition p2Feature : featureDefinitions) {
 	        		this.createFeature(p2Feature);
 	        }
+        }
+        
+        if(p2features != null) {
+        	for(EclipseArtifact artifact : p2features) {
+        		String[] idparts = StringUtils.split(artifact.getId(), ':');
+    			if(idparts.length != 2) {
+    				throw new IllegalArgumentException("Illegal artifact ID; expected format is bundleId:version - " + artifact.getId());
+    			}
+    			try {
+	    			File featureFile = JarUtils.findFeature(project, idparts[0], idparts[1]);
+	    			File outputFile = new File(featuresDestinationFolder, featureFile.getName());
+	    			JarUtils.adjustFeatureXml(featureFile, outputFile, this.bundlesDestinationFolder, log, timestamp, project);
+    			} catch(IOException e) {
+    				throw new UncheckedIOException(e);
+    			}
+    			
+        	}
         }
     }
 

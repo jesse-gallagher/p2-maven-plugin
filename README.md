@@ -9,6 +9,8 @@ The original project readme is available as [README-orig.md](README-orig.md).
 ### Features
 
 - Added resolution of features from available `p2`-layout repositories when the protocol is "file"
+  - Note: this can cause trouble when the Maven-resolved feature contains different plugin versions than are available in the file p2 repositories, and so is primarily useful in edge cases when gathering features that are mavenized but without wanting to enumerate every plugin dependency
+- Added ability to specify `p2features` in the configuration to bring in features found in available `p2`-layout repositories when the protocol is "file"
 - Adjust plugin resolution to be a bit more correct (previously it would match `com.foo.bar` to a plugin named `com.foo.bar.baz`)
 - Added ability to specify p2 artifacts in `featureDefinition` blocks
 
