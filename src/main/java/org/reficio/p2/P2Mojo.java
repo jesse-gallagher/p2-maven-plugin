@@ -442,12 +442,12 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
 				p2featureDefinition.setVersion( Utils.mavenToEclipse(p2featureDefinition.getVersion(), timestamp) );
 
 				boolean unpack = p2featureDefinition.getUnpack();
-				FeatureBuilder featureBuilder = new FeatureBuilder(p2featureDefinition, bi, false, unpack, timestamp);
+				FeatureBuilder featureBuilder = new FeatureBuilder(p2featureDefinition, bi, false, unpack, timestamp, project);
 				featureBuilder.generate(this.featuresDestinationFolder);
 
 				if ( p2featureDefinition.getGenerateSourceFeature()) {
 					// build also the source feature. (But do not unpack. Should not be neccessary)
-					FeatureBuilder sourceFeatureBuilder = new FeatureBuilder(p2featureDefinition, bi, true, false, timestamp);
+					FeatureBuilder sourceFeatureBuilder = new FeatureBuilder(p2featureDefinition, bi, true, false, timestamp, project);
 					sourceFeatureBuilder.generate(this.featuresDestinationFolder);
 				}
 			} else {

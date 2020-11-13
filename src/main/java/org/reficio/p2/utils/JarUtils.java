@@ -146,46 +146,60 @@ public class JarUtils {
 	        	if (n instanceof Element) {
 		        	Element el = (Element)n;
 		        	String pluginId = el.getAttribute("id");
-		        	File[] files = findFiles(pluginDir, pluginId);
-		        	if(files.length == 0) {
-		        		// Look through the project's local p2 repositories
-		        		for(Repository repo : mavenProject.getRepositories()) {
-		        			// TODO support remote repos
-		        			if("p2".equals(repo.getLayout()) && repo.getUrl().startsWith("file:/")) { //$NON-NLS-1$ //$NON-NLS-2$
-		        				try {
-									File repoPluginDir = new File(new File(new URI(repo.getUrl())), "plugins");
-									File[] repoPlugins = findFiles(repoPluginDir, pluginId);
-									if(repoPlugins.length > 0) {
-										// Then we found a suitable match, we'll assume
-										Arrays.sort(files, fileComparator);
-										File lastPlugin = repoPlugins[repoPlugins.length-1];
-										// Copy it into our destination
-										File dest = new File(pluginDir, lastPlugin.getName());
-										Files.copy(lastPlugin, dest);
-										files = new File[] { dest };
-										break; 
-									}
-								} catch (URISyntaxException e) {
-									throw new IOException(e);
-								}
-		        			}
-		        		}
-		        	}
+		        	File pluginFile = findPlugin(pluginDir, mavenProject, pluginId);
 		        	
-		        	if (files.length == 0) {
+		        	if (pluginFile == null) {
 		        		log.error("Cannot find plugin "+pluginId);
 		        	} else {
-		        		//in case more than one plugin with same id
-		        		Arrays.sort(files,fileComparator);
-		        		//File firstFile = files[0];
-		        		File lastFile = files[files.length-1];
 		        		//String firstVersion = BundleUtils.INSTANCE.getBundleVersion(new Jar(firstFile));
-		        		String lastVersion = BundleUtils.INSTANCE.getBundleVersion(new Jar(lastFile)); //may throw IOException
+		        		String lastVersion = BundleUtils.INSTANCE.getBundleVersion(new Jar(pluginFile)); //may throw IOException
 		        		log.info("Adjusting version for plugin "+pluginId+" to "+lastVersion);
 		        		el.setAttribute("version", lastVersion);
 		        	}
 	        	}
 	        }
+    }
+    
+    /**
+     * @since 1.4.1
+     */
+    public static File findPlugin(File projectPluginDir, MavenProject mavenProject, String pluginId) throws IOException {
+    	// TODO allow for restriction by version
+    	File[] files = findFiles(projectPluginDir, pluginId);
+    	if(files.length == 0) {
+    		// Look through the project's local p2 repositories
+    		for(Repository repo : mavenProject.getRepositories()) {
+    			// TODO support remote repos
+    			if("p2".equals(repo.getLayout()) && repo.getUrl().startsWith("file:/")) { //$NON-NLS-1$ //$NON-NLS-2$
+    				try {
+						File repoPluginDir = new File(new File(new URI(repo.getUrl())), "plugins");
+						File[] repoPlugins = findFiles(repoPluginDir, pluginId);
+						if(repoPlugins.length > 0) {
+							// Then we found a suitable match, we'll assume
+							Arrays.sort(files, fileComparator);
+							File lastPlugin = repoPlugins[repoPlugins.length-1];
+							// Copy it into our destination
+							File dest = new File(projectPluginDir, lastPlugin.getName());
+							Files.copy(lastPlugin, dest);
+							files = new File[] { dest };
+							break; 
+						}
+					} catch (URISyntaxException e) {
+						throw new IOException(e);
+					}
+    			}
+    		}
+    	}
+    	
+    	if (files.length == 0) {
+    		return null;
+    	} else {
+    		//in case more than one plugin with same id
+    		Arrays.sort(files,fileComparator);
+    		//File firstFile = files[0];
+    		File lastFile = files[files.length-1];
+    		return lastFile;
+    	}
     }
     
     static File[] findFiles(File pluginDir, final String pluginId) {

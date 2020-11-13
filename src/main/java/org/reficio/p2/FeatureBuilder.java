@@ -21,12 +21,16 @@ package org.reficio.p2;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Collection;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.maven.project.MavenProject;
 import org.reficio.p2.bundler.ArtifactBundlerInstructions;
 import org.reficio.p2.logger.Logger;
 import org.reficio.p2.utils.JarUtils;
@@ -35,17 +39,20 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.google.common.collect.Multimap;
+import com.google.common.io.Files;
 
 public class FeatureBuilder {
 
 
 	public FeatureBuilder(P2FeatureDefinition p2FeatureDefintion, Multimap<P2Artifact, 
-			ArtifactBundlerInstructions>  bundlerInstructions, boolean generateSourceFeature, boolean unpack, String timestamp) {
+			ArtifactBundlerInstructions>  bundlerInstructions, boolean generateSourceFeature, boolean unpack, String timestamp,
+			MavenProject mavenProject) {
 		this.p2FeatureDefintion = p2FeatureDefintion;
 		this.bundlerInstructions = bundlerInstructions;
 		this.generateSourceFeature = generateSourceFeature;
 		this.unpack = unpack;
 		this.featureTimeStamp = timestamp;
+		this.mavenProject = mavenProject;
 	}
 
 	private Multimap<P2Artifact, ArtifactBundlerInstructions>  bundlerInstructions;
@@ -54,12 +61,16 @@ public class FeatureBuilder {
 	private boolean unpack;
 	//cache this so that the same timestamp is used
 	private String featureTimeStamp;
+	/**
+	 * @since 1.4.1
+	 */
+	private final MavenProject mavenProject;
 	
 	public void generate(File destinationFolder) {
 		try {
 			File featureContent = new File(destinationFolder, this.getFeatureFullName());
 			featureContent.mkdir();
-			Document xmlDoc = this.buildXml();
+			Document xmlDoc = this.buildXml(destinationFolder);
 			
 			XmlUtils.writeXml(xmlDoc, new File(featureContent, "feature.xml"));
 			
@@ -90,7 +101,7 @@ public class FeatureBuilder {
 		return Logger.getLog();
 	}
 
-	Document buildXml() throws ParserConfigurationException, FileNotFoundException {
+	Document buildXml(File destinationFolder) throws ParserConfigurationException, IOException {
 		Document xmlDoc = this.fetchOrCreateXml();
 		Element featureElement = XmlUtils.fetchOrCreateElement(xmlDoc, xmlDoc, "feature");
 	
@@ -113,9 +124,45 @@ public class FeatureBuilder {
 		}
 		// add the <plugin> tags of the defined artifacts
 		generateFeatureContent(xmlDoc, featureElement);
-
+		resolveExistingP2Artifacts(xmlDoc, featureElement, destinationFolder);
 	
 		return xmlDoc;
+	}
+	
+	/**
+	 * @since 1.4.1
+	 */
+	private void resolveExistingP2Artifacts(Document xmlDoc, Element featureElement, File destinationFolder) throws IOException {
+		File pluginsDir = new File(destinationFolder.getParentFile(), "plugins");
+		for(EclipseArtifact artifact : p2FeatureDefintion.getP2()) {
+			String[] idparts = StringUtils.split(artifact.getId(), ':');
+			if(idparts.length != 2) {
+				throw new IllegalArgumentException("Illegal artifact ID; expected format is bundleId:version - " + artifact.getId());
+			}
+			File plugin = JarUtils.findPlugin(pluginsDir, mavenProject, idparts[0]);
+			if(plugin == null) {
+				throw new IllegalStateException("Unable to resolve P2 artifact " + artifact.getId());
+			}
+			
+			// Copy the plugin into our workspace
+			File pluginDest = new File(pluginsDir, plugin.getName());
+			if(!pluginDest.equals(plugin)) {
+				Files.copy(plugin, pluginDest);
+			}
+			
+			// Read the true info from the manifest
+			try(JarFile f = new JarFile(pluginDest)) {
+				Manifest manifest = f.getManifest();
+				String version = manifest.getMainAttributes().getValue("Bundle-Version");
+				
+				Element pluginElement = XmlUtils.createElement(xmlDoc,featureElement,"plugin");
+				pluginElement.setAttribute("id", idparts[0]);
+				pluginElement.setAttribute("download-size", "0"); //TODO How can we get the JAR-size from the artifact?
+				pluginElement.setAttribute("install-size", "0");  //TODO 
+				pluginElement.setAttribute("version", version);
+				pluginElement.setAttribute("unpack", unpack ? "true" : "false");
+			}
+		}
 	}
 
 	private void computeFeatureId(Element featureElement) {
