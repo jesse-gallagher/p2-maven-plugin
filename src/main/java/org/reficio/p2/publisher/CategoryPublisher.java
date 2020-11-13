@@ -26,6 +26,8 @@ import org.eclipse.sisu.equinox.launching.internal.P2ApplicationLauncher;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -62,7 +64,16 @@ public class CategoryPublisher {
 
     private void configureLauncher(String categoryFileLocation, String metadataRepositoryLocation) throws AbstractMojoExecutionException, IOException {
         File metadataRepositoryDir = new File(metadataRepositoryLocation).getCanonicalFile();
-        File categoryDefinitionFileSource = new File(categoryFileLocation);
+        File categoryDefinitionFileSource;
+        try {
+	        if(categoryFileLocation.startsWith("file:")) { //$NON-NLS-1$
+	        	categoryDefinitionFileSource = new File(new URI(categoryFileLocation));
+	        } else {
+	        	categoryDefinitionFileSource = new File(categoryFileLocation);
+	        }
+        } catch(URISyntaxException e) {
+        	throw new IOException(e);
+        }
         File categoryDefinitionFileTarget = new File(metadataRepositoryDir, "category.xml");
         FileUtils.copyFile(categoryDefinitionFileSource, categoryDefinitionFileTarget);
 
