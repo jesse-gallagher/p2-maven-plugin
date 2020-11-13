@@ -19,10 +19,31 @@
 package org.reficio.p2.utils;
 
 
-import aQute.bnd.osgi.Analyzer;
-import aQute.bnd.osgi.FileResource;
-import aQute.bnd.osgi.Jar;
-import aQute.bnd.osgi.Resource;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -36,23 +57,10 @@ import org.w3c.dom.NodeList;
 
 import com.google.common.io.Files;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
-import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
+import aQute.bnd.osgi.Analyzer;
+import aQute.bnd.osgi.FileResource;
+import aQute.bnd.osgi.Jar;
+import aQute.bnd.osgi.Resource;
 
 /**
  * @author Tom Bujok (tom.bujok@gmail.com)<br>
@@ -132,6 +140,45 @@ public class JarUtils {
 			return arg0.getName().compareTo(arg1.getName());
 		}
 	};
+	static Comparator<File> pluginComparator = Comparator.comparing((File plugin) -> {
+		try(JarFile f = new JarFile(plugin)) {
+			Manifest m = f.getManifest();
+			return new Version((String)m.getMainAttributes().getValue("Bundle-Version")); //$NON-NLS-1$
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	});
+	private static class Version implements Comparable<Version> {
+		public int major;
+		public int minor;
+		public int patch;
+		public String qualifier;
+		
+		public Version(String spec) {
+			if(spec == null) {
+				major = minor = patch = 0;
+				qualifier = "0"; //$NON-NLS-1$
+			} else {
+				String[] bits = StringUtils.split(spec, ".", 4); //$NON-NLS-1$
+				major = Integer.parseInt(bits[0]);
+				minor = bits.length > 1 ? Integer.parseInt(bits[1]) : 0;
+				patch = bits.length > 2 ? Integer.parseInt(bits[2]) : 0;
+				qualifier = bits.length > 3 ? bits[3] : "0"; //$NON-NLS-1$
+			}
+		}
+		@Override
+		public int compareTo(Version o) {
+			return Comparator.comparingInt((Version v) -> v.major)
+				.thenComparing(v -> v.minor)
+				.thenComparing(v -> v.patch)
+				.thenComparing(v -> v.qualifier)
+				.compare(this, o);
+		}
+		@Override
+		public String toString() {
+			return MessageFormat.format("[Version: {0}.{1}.{2}.{3}]", major, minor, patch, qualifier);
+		}
+	}
     
 	/**
 	 * Adjust the pluginId TODO - this may be wrong if singleton is used
@@ -158,7 +205,7 @@ public class JarUtils {
 		        	} else {
 		        		//String firstVersion = BundleUtils.INSTANCE.getBundleVersion(new Jar(firstFile));
 		        		String lastVersion = BundleUtils.INSTANCE.getBundleVersion(new Jar(pluginFile)); //may throw IOException
-		        		log.info("Adjusting version for plugin "+pluginId+" to "+lastVersion);
+		        		log.info("Adjusting version for plugin "+pluginId+" to "+lastVersion + " from " + pluginFile);
 		        		el.setAttribute("version", lastVersion);
 		        	}
 	        	}
@@ -166,7 +213,7 @@ public class JarUtils {
     }
     
     /**
-     * @since 1.4.1
+     * @since 2.0.0
      */
     public static File findPlugin(File projectPluginDir, MavenProject mavenProject, String pluginId, String pluginVersion) throws IOException {
     	List<File> files = new ArrayList<>();
@@ -190,8 +237,9 @@ public class JarUtils {
     		File pluginFile;
     		if(StringUtils.isEmpty(pluginVersion) || "0.0.0".equals(pluginVersion)) { //$NON-NLS-1$
         		//in case more than one plugin with same id
-        		Collections.sort(files,fileComparator);
-        		pluginFile = files.get(files.size()-1);	
+        		Collections.sort(files,pluginComparator);
+        		pluginFile = files.get(files.size()-1);
+        		System.out.println("Found highest version " + pluginFile.getName() + " from " + files);
     		} else {
     			// Find an exact match
     			pluginFile = files.stream()
@@ -211,7 +259,7 @@ public class JarUtils {
     /**
      * Locates the named feature in the file:/ p2 repositories known to this project
      * 
-     * @since 1.4.1
+     * @since 2.0.0
      */
     public static File findFeature(MavenProject mavenProject, String featureId, String featureVersion) throws IOException {
     	List<File> files = new ArrayList<>();
