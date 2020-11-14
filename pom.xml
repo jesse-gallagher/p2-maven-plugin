@@ -210,6 +210,17 @@
             <artifactId>clover</artifactId>
             <version>${clover.version}</version>
         </dependency>
+        
+		<dependency>
+			<groupId>com.ibm.sbt</groupId>
+			<artifactId>com.ibm.commons</artifactId>
+			<version>9.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.ibm.sbt</groupId>
+			<artifactId>com.ibm.commons.xml</artifactId>
+			<version>9.0.0</version>
+		</dependency>
     </dependencies>
 
     <build>
@@ -316,7 +327,8 @@
                     <useDefaultMapping>true</useDefaultMapping>
                     <properties>
                         <year>${project.inceptionYear}</year>
-                        <company>Reficio (TM) - Reestablish your software!</company>
+                        <copyrightYear>2020</copyrightYear>
+                        <company>Reficio (TM), Jesse Gallagher</company>
                     </properties>
                     <encoding>UTF-8</encoding>
                 </configuration>
