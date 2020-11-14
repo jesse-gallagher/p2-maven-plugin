@@ -22,11 +22,18 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -75,6 +82,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.ibm.commons.util.StringUtil;
 
 
 /**
@@ -255,6 +263,7 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
      */
     @Parameter(defaultValue = "false")
     private boolean generateSiteXml = false;
+    
     /**
      * When {@code generateSiteXml} is enabled, this specifies a category to override any found
      * in a configure category.xml file.
@@ -262,6 +271,14 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
      */
     @Parameter(defaultValue = "")
     private String siteXmlCategory = ""; //$NON-NLS-1$
+    
+    /**
+     * Generate a ZIP archive of the final site.
+     * 
+     * @since 2.1.0
+     */
+    @Parameter(defaultValue = "false")
+    private boolean archiveSite = false;
 
     /**
      * Processing entry point.
@@ -269,6 +286,10 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
      */
     @Override
     public void execute() {
+    	if("p2-repository".equals(project.getPackaging())) { //$NON-NLS-1$
+    		archiveSite = true;
+    	}
+    	
         try {
             initializeEnvironment();
             initializeRepositorySystem();
@@ -279,6 +300,9 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
             executeCategoryPublisher();
             if(generateSiteXml) {
             	generateSiteXml();
+            }
+            if(archiveSite) {
+            	archiveSite();
             }
             cleanupEnvironment();
         } catch (Exception e) {
@@ -609,6 +633,29 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
     
     private void generateSiteXml() {
     	new GenerateSiteXmlTask(Paths.get(buildDirectory, "repository"), this.siteXmlCategory, log).run();; //$NON-NLS-1$
+    }
+    
+    private void archiveSite() throws IOException {
+    	// TODO fill this in
+    	String artifactFileName = StringUtil.format("{0}.zip", project.getBuild().getFinalName()); //$NON-NLS-1$
+    	Path artifactFile = Paths.get(buildDirectory, artifactFileName);
+    	try(OutputStream os = Files.newOutputStream(artifactFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+    		try(ZipOutputStream zos = new ZipOutputStream(os, StandardCharsets.UTF_8)) {
+    			Path repoDir = Paths.get(buildDirectory, "repository"); //$NON-NLS-1$
+    			Files.walk(repoDir)
+    				.filter(Files::isRegularFile)
+    				.forEach(p -> {
+	    				Path relativePath = repoDir.relativize(p);
+	    				ZipEntry entry = new ZipEntry(relativePath.toString());
+	    				try {
+							zos.putNextEntry(entry);
+							Files.copy(p, zos);
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						}
+					});
+    		}
+    	}
     }
 
     private void cleanupEnvironment() throws IOException {

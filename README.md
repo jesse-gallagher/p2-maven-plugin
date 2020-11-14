@@ -13,6 +13,8 @@ The original project readme is available as [README-orig.md](README-orig.md).
 - Added ability to specify `p2features` in the configuration to bring in features found in available `p2`-layout repositories when the protocol is "file"
 - Adjust plugin version resolution to allow for specific versions, including multiple versions with the same ID
 - Added ability to specify p2 artifacts in `featureDefinition` blocks
+- Added ability to generate an old-style "site.xml" file for the repository
+- Added `archiveSite` configuration option to create a ZIP of the generated site
 
 ### Minor Changes
 
