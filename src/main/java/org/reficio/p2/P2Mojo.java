@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012 Reficio (TM) - Reestablish your software! All Rights Reserved.
+ * Copyright (c) 2012-2020 Reficio (TM), Jesse Gallagher All Rights Reserved.
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,21 +18,37 @@
  */
 package org.reficio.p2;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Repository;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.AbstractMojoExecutionException;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugins.annotations.*;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.PlexusConstants;
 import org.codehaus.plexus.PlexusContainer;
@@ -42,6 +58,7 @@ import org.codehaus.plexus.context.Context;
 import org.codehaus.plexus.context.ContextException;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Contextualizable;
 import org.eclipse.sisu.equinox.launching.internal.P2ApplicationLauncher;
+import org.openntf.maven.p2.GenerateSiteXmlTask;
 import org.reficio.p2.bundler.ArtifactBundler;
 import org.reficio.p2.bundler.ArtifactBundlerInstructions;
 import org.reficio.p2.bundler.ArtifactBundlerRequest;
@@ -51,20 +68,21 @@ import org.reficio.p2.publisher.BundlePublisher;
 import org.reficio.p2.publisher.CategoryPublisher;
 import org.reficio.p2.resolver.eclipse.EclipseResolutionRequest;
 import org.reficio.p2.resolver.eclipse.impl.DefaultEclipseResolver;
-import org.reficio.p2.resolver.maven.*;
+import org.reficio.p2.resolver.maven.Artifact;
+import org.reficio.p2.resolver.maven.ArtifactResolutionRequest;
+import org.reficio.p2.resolver.maven.ArtifactResolutionResult;
+import org.reficio.p2.resolver.maven.ArtifactResolver;
+import org.reficio.p2.resolver.maven.ResolvedArtifact;
 import org.reficio.p2.resolver.maven.impl.AetherResolver;
 import org.reficio.p2.utils.BundleUtils;
 import org.reficio.p2.utils.JarUtils;
 import org.reficio.p2.utils.Utils;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import com.ibm.commons.util.StringUtil;
 
 
 /**
@@ -238,6 +256,29 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
      * Folder which the feature jar files bundled by the ArtifactBundler will be copied to
      */
     private File featuresDestinationFolder;
+    
+    /**
+     * Generates an old-style site.xml in the final repository
+     * @since 2.1.0
+     */
+    @Parameter(defaultValue = "false")
+    private boolean generateSiteXml = false;
+    
+    /**
+     * When {@code generateSiteXml} is enabled, this specifies a category to override any found
+     * in a configure category.xml file.
+     * @since 2.1.0
+     */
+    @Parameter(defaultValue = "")
+    private String siteXmlCategory = ""; //$NON-NLS-1$
+    
+    /**
+     * Generate a ZIP archive of the final site.
+     * 
+     * @since 2.1.0
+     */
+    @Parameter(defaultValue = "false")
+    private boolean archiveSite = false;
 
     /**
      * Processing entry point.
@@ -245,6 +286,10 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
      */
     @Override
     public void execute() {
+    	if("p2-repository".equals(project.getPackaging())) { //$NON-NLS-1$
+    		archiveSite = true;
+    	}
+    	
         try {
             initializeEnvironment();
             initializeRepositorySystem();
@@ -253,6 +298,12 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
             processEclipseArtifacts();
             executeP2PublisherPlugin();
             executeCategoryPublisher();
+            if(generateSiteXml) {
+            	generateSiteXml();
+            }
+            if(archiveSite) {
+            	archiveSite();
+            }
             cleanupEnvironment();
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -574,10 +625,37 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
             destinationFolder.mkdirs();
             File categoryDefinitionFile = new File(destinationFolder, DEFAULT_CATEGORY_FILE);
             FileWriter writer = new FileWriter(categoryDefinitionFile);
-            IOUtils.copy(is, writer, "UTF-8");
+            IOUtils.copy(is, writer, "UTF-8"); //$NON-NLS-1$
             IOUtils.closeQuietly(writer);
             categoryFileURL = categoryDefinitionFile.getAbsolutePath();
         }
+    }
+    
+    private void generateSiteXml() {
+    	new GenerateSiteXmlTask(Paths.get(buildDirectory, "repository"), this.siteXmlCategory, log).run();; //$NON-NLS-1$
+    }
+    
+    private void archiveSite() throws IOException {
+    	// TODO fill this in
+    	String artifactFileName = StringUtil.format("{0}.zip", project.getBuild().getFinalName()); //$NON-NLS-1$
+    	Path artifactFile = Paths.get(buildDirectory, artifactFileName);
+    	try(OutputStream os = Files.newOutputStream(artifactFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+    		try(ZipOutputStream zos = new ZipOutputStream(os, StandardCharsets.UTF_8)) {
+    			Path repoDir = Paths.get(buildDirectory, "repository"); //$NON-NLS-1$
+    			Files.walk(repoDir)
+    				.filter(Files::isRegularFile)
+    				.forEach(p -> {
+	    				Path relativePath = repoDir.relativize(p);
+	    				ZipEntry entry = new ZipEntry(relativePath.toString());
+	    				try {
+							zos.putNextEntry(entry);
+							Files.copy(p, zos);
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						}
+					});
+    		}
+    	}
     }
 
     private void cleanupEnvironment() throws IOException {

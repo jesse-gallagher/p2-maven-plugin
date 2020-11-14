@@ -2,3 +2,8 @@ p2-maven-plugin
 
 This project is a fork of `org.reficio:p2-maven-plugin`, which is copyright 2012-2020 Reficio, is licensed
 under the Apache License 2.0, and is available from https://github.com/reficio/p2-maven-plugin
+
+This project contains the following third-party code:
+
+- Code derived from `p2sitexml-maven-plugin`, which is copyright 2017 Darwino, Inc., is licensed under the Apache
+	License 2.0, and is available from https://github.com/darwino/dwo-p2sitexml-maven-plugin

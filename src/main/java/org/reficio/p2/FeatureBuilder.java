@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012 Reficio (TM) - Reestablish your software! All Rights Reserved.
+ * Copyright (c) 2012-2020 Reficio (TM), Jesse Gallagher All Rights Reserved.
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -139,8 +139,17 @@ public class FeatureBuilder {
 			if(idparts.length != 2) {
 				throw new IllegalArgumentException("Illegal artifact ID; expected format is bundleId:version - " + artifact.getId());
 			}
-			File plugin = JarUtils.findPlugin(pluginsDir, mavenProject, idparts[0], idparts[1]);
+			String pluginId = idparts[0];
+			if(generateSourceFeature) {
+				pluginId += ".source";
+			}
+			File plugin = JarUtils.findPlugin(pluginsDir, mavenProject, pluginId, idparts[1]);
 			if(plugin == null) {
+				// Allowed for source bundles
+				if(generateSourceFeature) {
+					log().info("Skipping unresolvable source bundle " + pluginId + ":" + idparts[1]);
+					continue;
+				}
 				throw new IllegalStateException("Unable to resolve P2 artifact " + artifact.getId());
 			}
 			
@@ -156,7 +165,7 @@ public class FeatureBuilder {
 				String version = manifest.getMainAttributes().getValue("Bundle-Version");
 				
 				Element pluginElement = XmlUtils.createElement(xmlDoc,featureElement,"plugin");
-				pluginElement.setAttribute("id", idparts[0]);
+				pluginElement.setAttribute("id", pluginId);
 				pluginElement.setAttribute("download-size", "0"); //TODO How can we get the JAR-size from the artifact?
 				pluginElement.setAttribute("install-size", "0");  //TODO 
 				pluginElement.setAttribute("version", version);
