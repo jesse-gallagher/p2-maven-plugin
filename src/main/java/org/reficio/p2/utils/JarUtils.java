@@ -102,19 +102,19 @@ public class JarUtils {
         File newXml = null;
         try {
         	jar = new Jar(inputFile);
-	        Resource res = jar.getResource("feature.xml");
+	        Resource res = jar.getResource("feature.xml"); //$NON-NLS-1$
 	        Document featureSpec = XmlUtils.parseXml(res.openInputStream());
 	        
 	        adjustFeatureQualifierVersionWithTimestamp(featureSpec, timestamp);
 	        adjustFeaturePluginData(featureSpec, pluginDir, log, mavenProject);
             
-	        File temp = new File(outputFile.getParentFile(),"temp");
+	        File temp = new File(outputFile.getParentFile(),"temp"); //$NON-NLS-1$
 	        temp.mkdir();
-	        newXml = new File(temp,"feature.xml");
+	        newXml = new File(temp,"feature.xml"); //$NON-NLS-1$
 	        XmlUtils.writeXml(featureSpec, newXml);
 
             FileResource newRes = new FileResource(newXml);
-            jar.putResource("feature.xml", newRes, true);
+            jar.putResource("feature.xml", newRes, true); //$NON-NLS-1$
             jar.write(outputFile);
         } catch (Exception e) {
             throw new RuntimeException("Cannot open jar " + outputFile, e);
@@ -129,9 +129,9 @@ public class JarUtils {
     }
 
     public static void adjustFeatureQualifierVersionWithTimestamp(Document featureSpec, String timestamp) {
-	        String version = featureSpec.getDocumentElement().getAttributeNode("version").getValue();
+	        String version = featureSpec.getDocumentElement().getAttributeNode("version").getValue(); //$NON-NLS-1$
 	        String newVersion = Utils.eclipseQualifierToTimeStamp(version, timestamp); 
-	        featureSpec.getDocumentElement().getAttributeNode("version").setValue(newVersion);
+	        featureSpec.getDocumentElement().getAttributeNode("version").setValue(newVersion); //$NON-NLS-1$
     }
 
     static Comparator<File> fileComparator = new Comparator<File>() {
@@ -192,12 +192,12 @@ public class JarUtils {
     public static void adjustFeaturePluginData(Document featureSpec, File pluginDir, Log log, MavenProject mavenProject) throws IOException {
 	        //get list of all plugins
     	
-	        NodeList plugins = featureSpec.getElementsByTagName("plugin");
+	        NodeList plugins = featureSpec.getElementsByTagName("plugin"); //$NON-NLS-1$
 	        for(int i=0; i<plugins.getLength(); ++i) {
 	        	Node n = plugins.item(i);
 	        	if (n instanceof Element) {
 		        	Element el = (Element)n;
-		        	String pluginId = el.getAttribute("id");
+		        	String pluginId = el.getAttribute("id"); //$NON-NLS-1$
 		        	File pluginFile = findPlugin(pluginDir, mavenProject, pluginId, el.getAttribute("version")); //$NON-NLS-1$
 		        	
 		        	if (pluginFile == null) {
@@ -206,7 +206,7 @@ public class JarUtils {
 		        		//String firstVersion = BundleUtils.INSTANCE.getBundleVersion(new Jar(firstFile));
 		        		String lastVersion = BundleUtils.INSTANCE.getBundleVersion(new Jar(pluginFile)); //may throw IOException
 		        		log.info("Adjusting version for plugin "+pluginId+" to "+lastVersion + " from " + pluginFile);
-		        		el.setAttribute("version", lastVersion);
+		        		el.setAttribute("version", lastVersion); //$NON-NLS-1$
 		        	}
 	        	}
 	        }
@@ -239,7 +239,6 @@ public class JarUtils {
         		//in case more than one plugin with same id
         		Collections.sort(files,pluginComparator);
         		pluginFile = files.get(files.size()-1);
-        		System.out.println("Found highest version " + pluginFile.getName() + " from " + files);
     		} else {
     			// Find an exact match
     			pluginFile = files.stream()
@@ -282,7 +281,7 @@ public class JarUtils {
     		throw new IllegalStateException("Unable to find feature " + featureId + ":" + featureVersion);
     	} else {
     		File pluginFile;
-    		if(StringUtils.isEmpty(featureVersion) || "0.0.0".equals(featureVersion)) {
+    		if(StringUtils.isEmpty(featureVersion) || "0.0.0".equals(featureVersion)) { //$NON-NLS-1$
         		//in case more than one plugin with same id
         		Collections.sort(files,fileComparator);
         		pluginFile = files.get(files.size()-1);	
@@ -301,49 +300,46 @@ public class JarUtils {
     	 return pluginDir.listFiles(new FilenameFilter() {
 				@Override
 				public boolean accept(File dir, String name) {
-					return name.startsWith(pluginId + "_") && name.endsWith(".jar");
+					return name.startsWith(pluginId + "_") && name.endsWith(".jar"); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 			});
     }
     
     public static void removeSignature(File jar) {
-        File unsignedJar = new File(jar.getParent(), jar.getName() + ".tmp");
+        File unsignedJar = new File(jar.getParent(), jar.getName() + ".tmp"); //$NON-NLS-1$
         try {
             if (unsignedJar.exists()) {
                 FileUtils.deleteQuietly(unsignedJar);
-                unsignedJar = new File(jar.getParent(), jar.getName() + ".tmp");
+                unsignedJar = new File(jar.getParent(), jar.getName() + ".tmp"); //$NON-NLS-1$
             }
             if (!unsignedJar.createNewFile()) {
                 throw new RuntimeException("Cannot create file " + unsignedJar);
             }
 
-            ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(unsignedJar));
-            try {
-                ZipFile zip = new ZipFile(jar);
-                for (Enumeration list = zip.entries(); list.hasMoreElements(); ) {
-                    ZipEntry entry = (ZipEntry) list.nextElement();
-                    String name = entry.getName();
-                    if (entry.isDirectory()) {
-                        continue;
-                    } else if (name.endsWith(".RSA") || name.endsWith(".DSA") || name.endsWith(".SF")) {
-                        continue;
-                    }
-
-                    InputStream zipInputStream = zip.getInputStream(entry);
-                    zipOutputStream.putNextEntry(entry);
-                    try {
-                        IOUtils.copy(zipInputStream, zipOutputStream);
-                    } finally {
-                        zipInputStream.close();
-                    }
+            try(ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(unsignedJar))) {
+                try(ZipFile zip = new ZipFile(jar)) {
+	                for (Enumeration<? extends ZipEntry> list = zip.entries(); list.hasMoreElements(); ) {
+	                    ZipEntry entry = (ZipEntry) list.nextElement();
+	                    String name = entry.getName();
+	                    if (entry.isDirectory()) {
+	                        continue;
+	                    } else if (name.endsWith(".RSA") || name.endsWith(".DSA") || name.endsWith(".SF")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	                        continue;
+	                    }
+	
+	                    InputStream zipInputStream = zip.getInputStream(entry);
+	                    zipOutputStream.putNextEntry(entry);
+	                    try {
+	                        IOUtils.copy(zipInputStream, zipOutputStream);
+	                    } finally {
+	                        zipInputStream.close();
+	                    }
+	                }
+	                FileUtils.copyFile(unsignedJar, jar);
                 }
-                IOUtils.closeQuietly(zipOutputStream);
-                FileUtils.copyFile(unsignedJar, jar);
-            } finally {
-                IOUtils.closeQuietly(zipOutputStream);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         } finally {
             FileUtils.deleteQuietly(unsignedJar);
         }
@@ -353,10 +349,10 @@ public class JarUtils {
         try {
             ZipFile zip = new ZipFile(jarToUnsign);
             try {
-                for (Enumeration list = zip.entries(); list.hasMoreElements(); ) {
+                for (Enumeration<? extends ZipEntry> list = zip.entries(); list.hasMoreElements(); ) {
                     ZipEntry entry = (ZipEntry) list.nextElement();
                     String name = entry.getName();
-                    if (!entry.isDirectory() && (name.endsWith(".RSA") || name.endsWith(".DSA") || name.endsWith(".SF"))) {
+                    if (!entry.isDirectory() && (name.endsWith(".RSA") || name.endsWith(".DSA") || name.endsWith(".SF"))) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                         return true;
                     }
                 }
@@ -383,10 +379,10 @@ public class JarUtils {
 	private static void addToJar(JarOutputStream jar, File content) throws IOException
 	{
 		for (File f : FileUtils.listFiles(content, null, true) ) {
-			String fname = f.getPath().replace("\\", "/");
+			String fname = f.getPath().replace("\\", "/"); //$NON-NLS-1$ //$NON-NLS-2$
 			if (f.isDirectory()) {
-				if (!fname.endsWith("/")) {
-					fname = fname + "/";
+				if (!fname.endsWith("/")) { //$NON-NLS-1$
+					fname = fname + "/"; //$NON-NLS-1$
 				}
 				JarEntry entry = new JarEntry(fname);
 				entry.setTime(f.lastModified());

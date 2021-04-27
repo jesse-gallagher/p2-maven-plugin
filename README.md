@@ -24,4 +24,39 @@ The original project readme is available as [README-orig.md](README-orig.md).
 - Adjust plugin resolution to be a bit more correct (previously, it would match `com.foo.bar` to a plugin named `com.foo.bar.baz`)
 - Adjust plugin version comparison to be a bit more correct (previously, "2.0.0" would outrank "15.0.0")
 
-#### 
+## Usage
+
+The plugin is housed in OpenNTF's Maven repository, so you should add a `pluginRepository` to your project's pom:
+
+```xml
+<pluginRepositories>
+  <pluginRepository>
+    <id>artifactory.openntf.org</id>
+    <name>artifactory.openntf.org</name>
+    <url>https://artifactory.openntf.org/openntf</url>
+  </pluginRepository>
+</pluginRepositories>
+```
+
+Beyond that, basic usage is similar to the upstream project, except the Maven coordinates are changed:
+
+```xml
+<plugin>
+  <groupId>org.openntf.maven</groupId>
+  <artifactId>p2-maven-plugin</artifactId>
+  <version>2.1.0</version>
+  <executions>
+    <execution>
+      <id>generate-site</id>
+      <goals>
+        <goal>site</goal>
+      </goals>
+      <phase>prepare-package</phase>
+      <configuration>
+        <!-- config here -->
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+```
+
