@@ -528,7 +528,6 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
 				}
 			} else {
 				//given a feature file, so build using tycho
-				File basedir = p2featureDefinition.getFeatureFile().getParentFile();
 				TychoFeatureBuilder builder = new TychoFeatureBuilder(
 						p2featureDefinition.getFeatureFile(),
 						this.featuresDestinationFolder.getAbsolutePath(),
@@ -624,9 +623,9 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
             File destinationFolder = new File(destinationDirectory);
             destinationFolder.mkdirs();
             File categoryDefinitionFile = new File(destinationFolder, DEFAULT_CATEGORY_FILE);
-            FileWriter writer = new FileWriter(categoryDefinitionFile);
-            IOUtils.copy(is, writer, "UTF-8"); //$NON-NLS-1$
-            IOUtils.closeQuietly(writer);
+            try(FileWriter writer = new FileWriter(categoryDefinitionFile)) {
+	            IOUtils.copy(is, writer, "UTF-8"); //$NON-NLS-1$
+            }
             categoryFileURL = categoryDefinitionFile.getAbsolutePath();
         }
     }

@@ -28,7 +28,6 @@ import org.reficio.p2.bundler.impl.AquteHelper;
 import org.reficio.p2.resolver.maven.Artifact;
 import org.reficio.p2.resolver.maven.ResolvedArtifact;
 import org.reficio.p2.utils.BundleUtils;
-import org.reficio.p2.utils.JarUtils;
 import org.reficio.p2.utils.Utils;
 
 import java.io.File;
