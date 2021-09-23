@@ -296,14 +296,16 @@ public class JarUtils {
     	}
     }
     
-    static File[] findFiles(File pluginDir, final String pluginId) {
-    	 return pluginDir.listFiles(new FilenameFilter() {
-				@Override
-				public boolean accept(File dir, String name) {
-					return name.startsWith(pluginId + "_") && name.endsWith(".jar"); //$NON-NLS-1$ //$NON-NLS-2$
-				}
-			});
-    }
+	static File[] findFiles(File pluginDir, final String pluginId) {
+		File[] result = pluginDir.listFiles(new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String name) {
+				return name.startsWith(pluginId + "_") && name.endsWith(".jar"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		});
+		// May have returned null if pluginDir is not a directory; that's fine for our needs
+		return result == null ? new File[0] : result;
+	}
     
     public static void removeSignature(File jar) {
         File unsignedJar = new File(jar.getParent(), jar.getName() + ".tmp"); //$NON-NLS-1$
