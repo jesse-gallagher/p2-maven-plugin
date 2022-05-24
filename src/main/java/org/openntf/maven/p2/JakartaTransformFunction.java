@@ -30,6 +30,7 @@ import org.eclipse.transformer.TransformOptions;
 import org.eclipse.transformer.Transformer;
 import org.eclipse.transformer.Transformer.ResultCode;
 import org.eclipse.transformer.jakarta.JakartaTransform;
+import org.openntf.maven.p2.utils.TempFileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ public class JakartaTransformFunction implements Function<File, File> {
 		try {
 			String inputFileName = t.getAbsolutePath();
 			
-			File dest = File.createTempFile(t.getName(), ".jar"); //$NON-NLS-1$
+			File dest = TempFileUtils.createTempFile(t.getName(), ".jar"); //$NON-NLS-1$
 			String outputFileName = dest.getAbsolutePath();
 
 			Map<String, String> optionDefaults = JakartaTransform.getOptionDefaults();
