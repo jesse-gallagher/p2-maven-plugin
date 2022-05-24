@@ -15,6 +15,7 @@ The original project readme is available as [README-orig.md](README-orig.md).
 - Added ability to specify p2 artifacts in `featureDefinition` blocks
 - Added ability to generate an old-style "site.xml" file for the repository
 - Added `archiveSite` configuration option to create a ZIP of the generated site
+- Added ability to specify a `transform` option for an `artifact` definition to run the artifact (and its source, if bundled) through [Eclipse Transformer](https://github.com/eclipse/transformer). Currently only the value `jakarta` is supported
 
 ### Minor Changes
 
