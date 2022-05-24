@@ -59,6 +59,7 @@ import org.codehaus.plexus.context.ContextException;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Contextualizable;
 import org.eclipse.sisu.equinox.launching.internal.P2ApplicationLauncher;
 import org.openntf.maven.p2.GenerateSiteXmlTask;
+import org.openntf.maven.p2.utils.TempFileUtils;
 import org.reficio.p2.bundler.ArtifactBundler;
 import org.reficio.p2.bundler.ArtifactBundlerInstructions;
 import org.reficio.p2.bundler.ArtifactBundlerRequest;
@@ -307,6 +308,8 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
             cleanupEnvironment();
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+        	TempFileUtils.cleanTempFiles();
         }
     }
 

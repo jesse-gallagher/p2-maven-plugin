@@ -82,6 +82,11 @@ public class P2Artifact {
     private Map<String, String> combinedInstructions = new LinkedHashMap<String, String>();
 
     private boolean shouldResetCombinedInstructions = true;
+    
+    /**
+     * Determines whether the artifact should be passed through Eclipse Transformer before bundling.
+     */
+    private String transform;
 
     public P2Artifact() {
     }
@@ -139,6 +144,14 @@ public class P2Artifact {
     public void setExcludes(List<String> excludes) {
         this.excludes = excludes;
     }
+    
+    public String getTransform() {
+		return transform;
+	}
+    
+    public void setTransform(String transform) {
+		this.transform = transform;
+	}
 
     public Properties getInstructionsProperties() {
         return instructionsProperties;

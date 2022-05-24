@@ -22,6 +22,7 @@ import aQute.bnd.osgi.Analyzer;
 import aQute.bnd.osgi.Jar;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.openntf.maven.p2.JakartaTransformFunction;
 import org.reficio.p2.bundler.ArtifactBundlerInstructions;
 import org.reficio.p2.bundler.ArtifactBundlerRequest;
 import org.reficio.p2.bundler.impl.AquteHelper;
@@ -55,18 +56,32 @@ public class P2Helper {
         // group output in separate folder by groupId
         File artifactOutputFolder = forceMkdirSilently(new File(outputFolder, artifact.getGroupId()));
 
-        File binaryInputFile = artifact.getFile();
+        File binaryInputFile = transform(p2Artifact, artifact);
         File binaryOutputFile = new File(artifactOutputFolder, artifact.getFile().getName());
 
         File sourceInputFile = null;
         File sourceOutputFile = null;
         if (sourceArtifact != null) {
-            sourceInputFile = sourceArtifact.getFile();
+            sourceInputFile = transform(p2Artifact, sourceArtifact);
+            
             sourceOutputFile = new File(artifactOutputFolder, sourceArtifact.getFile().getName());
         }
         boolean bundle = BundleUtils.INSTANCE.isBundle(artifact.getFile());
         boolean shouldBundle = shouldBundle(p2Artifact, resolvedArtifact, bundle);
         return new ArtifactBundlerRequest(binaryInputFile, binaryOutputFile, sourceInputFile, sourceOutputFile, shouldBundle);
+    }
+    
+    private static File transform(P2Artifact p2artifact, Artifact artifact) {
+    	String transform = p2artifact.getTransform();
+    	if(transform != null && !transform.isEmpty()) {
+    		switch(transform) {
+    		case "jakarta": //$NON-NLS-1$
+        		return new JakartaTransformFunction().apply(artifact.getFile());
+        	default:
+        		throw new IllegalArgumentException("Unsupported transformation type: " + transform);
+    		}
+    	}
+    	return artifact.getFile();
     }
 
 
