@@ -24,7 +24,7 @@
         <wagon.version>2.2</wagon.version>
         <gmaven.version>2.1.1</gmaven.version>
         <gmaven.provider.selection>2.0</gmaven.provider.selection>
-        <groovy.version>3.0.9</groovy.version>
+        <groovy.version>4.0.2</groovy.version>
 
         <clover.version>3.3.0</clover.version>
         <clover.license>/private/reficio/clover.license</clover.license>
@@ -200,7 +200,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.codehaus.groovy</groupId>
+            <groupId>org.apache.groovy</groupId>
             <artifactId>groovy</artifactId>
             <version>${groovy.version}</version>
         </dependency>
@@ -293,7 +293,7 @@
                 </executions>
                 <dependencies>
                     <dependency>
-                        <groupId>org.codehaus.groovy</groupId>
+                        <groupId>org.apache.groovy</groupId>
                         <artifactId>groovy</artifactId>
                         <version>${groovy.version}</version>
                     </dependency>
@@ -353,7 +353,7 @@
                     <useDefaultMapping>true</useDefaultMapping>
                     <properties>
                         <year>${project.inceptionYear}</year>
-                        <copyrightYear>2020</copyrightYear>
+                        <copyrightYear>2022</copyrightYear>
                         <company>Reficio (TM), Jesse Gallagher</company>
                     </properties>
                     <encoding>UTF-8</encoding>
@@ -702,7 +702,7 @@
                         <version>3.2.2</version>
                         <dependencies>
                             <dependency>
-                                <groupId>org.codehaus.groovy</groupId>
+                                <groupId>org.apache.groovy</groupId>
                                 <artifactId>groovy</artifactId>
                                 <version>${groovy.version}</version>
                             </dependency>
