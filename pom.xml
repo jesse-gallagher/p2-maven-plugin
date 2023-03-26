@@ -26,6 +26,7 @@
         <wagon.version>2.2</wagon.version>
         <gmaven.version>2.1.1</gmaven.version>
         <gmaven.provider.selection>2.0</gmaven.provider.selection>
+        <groovy.version>4.0.2</groovy.version>
 
         <clover.version>3.3.0</clover.version>
         <clover.license>/private/reficio/clover.license</clover.license>
@@ -201,6 +202,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>${groovy.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.cenqua.clover</groupId>
             <artifactId>clover</artifactId>
             <version>${clover.version}</version>
@@ -297,6 +303,13 @@
                         </goals>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.groovy</groupId>
+                        <artifactId>groovy</artifactId>
+                        <version>${groovy.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.plexus</groupId>
@@ -680,6 +693,58 @@
                                     <xmlOutput>true</xmlOutput>
                                     <excludeFilterFile>src/main/resources/findbugs-exclude.xml</excludeFilterFile>
                                 </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>it</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <version>3.2.2</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.groovy</groupId>
+                                <artifactId>groovy</artifactId>
+                                <version>${groovy.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <addTestClassPath>true</addTestClassPath>
+                            <projectsDirectory>src/test/integration</projectsDirectory>
+                            <streamLogs>true</streamLogs>
+                            <showErrors>true</showErrors>
+                            <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+                            <pomIncludes>
+                                <pomInclude>*/pom.xml</pomInclude>
+                                <pomInclude>compile/*/pom.xml</pomInclude>
+                                <pomInclude>execute/*/pom.xml</pomInclude>
+                                <pomInclude>sources/*/pom.xml</pomInclude>
+                            </pomIncludes>
+                            <settingsFile>src/test/integration/settings.xml</settingsFile>
+                            <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
+                            <preBuildHookScript>setup.groovy</preBuildHookScript>
+                            <postBuildHookScript>validate.groovy</postBuildHookScript>
+                            <properties>
+                                <gmaven.logging>TRACE</gmaven.logging>
+                            </properties>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>install</goal>
+                                    <goal>run</goal>
+                                </goals>
                             </execution>
                         </executions>
                     </plugin>
