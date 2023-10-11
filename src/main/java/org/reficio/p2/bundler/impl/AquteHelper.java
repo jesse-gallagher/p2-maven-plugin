@@ -60,10 +60,13 @@ public class AquteHelper {
 
     private static void setAnalyzerOptions(Analyzer analyzer, boolean pedantic) {
         analyzer.setPedantic(pedantic);
+        analyzer.set(Analyzer.IGNORE_PACKAGE, "META-INF");
     }
 
     private static void setPackageOptions(Analyzer analyzer) {
-        analyzer.setProperty(Analyzer.IMPORT_PACKAGE, "*;resolution:=optional");
+    	// Avoid importing standard JDK packages
+        analyzer.setProperty(Analyzer.IMPORT_PACKAGE, "!java.*,*;resolution:=optional");
+        
         String export = analyzer.calculateExportsFromContents(analyzer.getJar());
         analyzer.setProperty(Analyzer.EXPORT_PACKAGE, export);
     }

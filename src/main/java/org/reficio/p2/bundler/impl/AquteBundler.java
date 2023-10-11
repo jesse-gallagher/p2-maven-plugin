@@ -21,6 +21,7 @@ package org.reficio.p2.bundler.impl;
 import aQute.bnd.osgi.Analyzer;
 import aQute.bnd.osgi.Jar;
 import org.apache.commons.io.FileUtils;
+import org.reficio.p2.bundler.AquteAnalyzerException;
 import org.reficio.p2.bundler.ArtifactBundler;
 import org.reficio.p2.bundler.ArtifactBundlerInstructions;
 import org.reficio.p2.bundler.ArtifactBundlerRequest;
@@ -30,6 +31,7 @@ import org.reficio.p2.utils.JarUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -48,12 +50,21 @@ public class AquteBundler implements ArtifactBundler {
 
     protected final BundleUtils bundleUtils;
     private final boolean pedantic;
+    private final boolean ignoreBndErrors;
 
-    public AquteBundler(boolean pedantic) {
+    public AquteBundler(boolean pedantic, boolean ignoreBndErrors) {
+        this.ignoreBndErrors = ignoreBndErrors;
         this.bundleUtils = new BundleUtils();
         this.pedantic = pedantic;
     }
 
+    AquteBundler(boolean pedantic, boolean ignoreBndErrors, BundleUtils bundleUtils) {
+        this.ignoreBndErrors = ignoreBndErrors;
+        this.bundleUtils = bundleUtils;
+        this.pedantic = pedantic;
+    }
+
+    @Override
     public void execute(ArtifactBundlerRequest request, ArtifactBundlerInstructions instructions) {
         log().info("Executing Bundler:");
         try {
@@ -68,7 +79,7 @@ public class AquteBundler implements ArtifactBundler {
         prepareOutputFile(request.getBinaryOutputFile());
         if (request.isShouldBundleBinaryFile()) {
             log().info("\t [EXEC] " + request.getBinaryInputFile().getName());
-            handleVanillaJarWrap(request, instructions);
+        	handleVanillaJarWrap(request, instructions);
         } else {
             log().info("\t [SKIP] " + request.getBinaryInputFile().getName());
             handleBundleJarWrap(request, instructions);
@@ -89,13 +100,12 @@ public class AquteBundler implements ArtifactBundler {
     }
 
     private void handleVanillaJarWrap(ArtifactBundlerRequest request, ArtifactBundlerInstructions instructions) throws Exception {
-        Analyzer analyzer = AquteHelper.buildAnalyzer(request, instructions, pedantic);
-        try {
+        try (Analyzer analyzer = AquteHelper.buildAnalyzer(request, instructions, pedantic)) {
             populateJar(analyzer, request.getBinaryOutputFile());
-            bundleUtils.reportErrors(analyzer);
+            if (bundleUtils.reportErrors(analyzer) && !ignoreBndErrors) {
+                throw new AquteAnalyzerException("Aqute Jar Analyser reports error.");
+            }
             removeSignature(request.getBinaryOutputFile());
-        } finally {
-            analyzer.close();
         }
     }
 
@@ -165,6 +175,7 @@ public class AquteBundler implements ArtifactBundler {
     }
 
     private void decorateSourceManifest(Manifest manifest, String name, String refrencedBundleSymbolicName, String symbolicName, String version) {
+        sanitizeSourceManifest(manifest);
         Attributes attributes = manifest.getMainAttributes();
         attributes.putValue(Analyzer.BUNDLE_SYMBOLICNAME, symbolicName);
         attributes.putValue(ECLIPSE_SOURCE_BUNDLE, refrencedBundleSymbolicName + ";version=\"" + version + "\";roots:=\".\"");
@@ -176,6 +187,19 @@ public class AquteBundler implements ArtifactBundler {
         attributes.putValue(IMPLEMENTATION_TITLE, name);
         attributes.putValue(SPECIFICATION_TITLE, name);
         attributes.putValue(AquteHelper.TOOL_KEY, AquteHelper.TOOL);
+    }
+
+    /**
+     * Removes the bundle manifest headers that incorrectly cause a source bundle being
+     * resolved instead of its corresponding classes bundle.
+     */
+    private void sanitizeSourceManifest(Manifest manifest) {
+      Attributes attributes = manifest.getMainAttributes();
+      if (!attributes.isEmpty()) {
+        // note that header is of type Attributes.Name, hence we call header.toString()
+        attributes.keySet().removeIf(header -> Arrays.asList(Analyzer.EXPORT_PACKAGE,
+            Analyzer.EXPORT_SERVICE, Analyzer.PROVIDE_CAPABILITY ).contains(header.toString()));
+      }
     }
 
     private Logger log() {

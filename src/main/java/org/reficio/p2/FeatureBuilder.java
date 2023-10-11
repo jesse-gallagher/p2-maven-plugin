@@ -29,7 +29,6 @@ import java.util.jar.Manifest;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.maven.project.MavenProject;
 import org.reficio.p2.bundler.ArtifactBundlerInstructions;
 import org.reficio.p2.logger.Logger;
@@ -40,6 +39,7 @@ import org.w3c.dom.Element;
 
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
+import com.ibm.commons.util.StringUtil;
 
 public class FeatureBuilder {
 
@@ -135,7 +135,7 @@ public class FeatureBuilder {
 	private void resolveExistingP2Artifacts(Document xmlDoc, Element featureElement, File destinationFolder) throws IOException {
 		File pluginsDir = new File(destinationFolder.getParentFile(), "plugins"); //$NON-NLS-1$
 		for(EclipseArtifact artifact : p2FeatureDefintion.getP2()) {
-			String[] idparts = StringUtils.split(artifact.getId(), ':');
+			String[] idparts = StringUtil.splitString(artifact.getId(), ':');
 			if(idparts.length != 2) {
 				throw new IllegalArgumentException("Illegal artifact ID; expected format is bundleId:version - " + artifact.getId());
 			}
@@ -234,7 +234,7 @@ public class FeatureBuilder {
 				if (generateSourceFeature) {
 					// 2015-05-12/RPr: A Source feature contains only sources.
 					id = abi.getSourceSymbolicName();
-					if (StringUtils.isBlank(id)) {
+					if (StringUtil.isEmpty(id)) {
 						log().info("\t [WARN] No source found for " + abi.getSymbolicName());
 						continue;
 					}
