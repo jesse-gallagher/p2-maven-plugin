@@ -19,10 +19,7 @@
 package org.reficio.p2.resolver.maven;
 
 import java.io.File;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-
-import static java.util.Arrays.asList;
+import java.util.Objects;
 
 /**
  * Represents one artifact (normally a jar file).
@@ -114,13 +111,20 @@ public class Artifact {
         }
     }
 
-    @Override
-    public boolean equals(Object other) {
-        return EqualsBuilder.reflectionEquals(this, other, asList("file"));
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(file);
+	}
 
-    @Override
-    public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this, asList("file"));
-    }
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Artifact other = (Artifact) obj;
+		return Objects.equals(file, other.file);
+	}
 }

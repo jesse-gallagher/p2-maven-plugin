@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2012-2022 Reficio (TM), Jesse Gallagher All Rights Reserved.
+/*
+ * Copyright (c) 2012 Reficio (TM) - Reestablish your software! All Rights Reserved.
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,22 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.reficio.p2.resolver.maven.impl.facade
+package org.reficio.p2.bundler;
 
-/**
- * @author Tom Bujok (tom.bujok@gmail.com)<br>
- *         Reficio (TM) - Reestablish your software!<br>
- *         http://www.reficio.org
- * @since 1.1.0
- */
-class AetherSonatypeFacadeTest extends AbstractAetherFacadeTest {
-    @Override
-    AetherFacade facade() {
-        return new AetherSonatypeFacade()
-    }
+public class AquteAnalyzerException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
-    @Override
-    String expectedPackage() {
-        return "org.sonatype.aether."
+	public AquteAnalyzerException(String message) {
+        super(message);
     }
 }

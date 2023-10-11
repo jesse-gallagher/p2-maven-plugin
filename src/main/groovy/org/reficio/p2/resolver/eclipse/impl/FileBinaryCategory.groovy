@@ -16,22 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.reficio.p2.resolver.maven.impl.facade
+package org.reficio.p2.resolver.eclipse.impl
 
-/**
- * @author Tom Bujok (tom.bujok@gmail.com)<br>
- *         Reficio (TM) - Reestablish your software!<br>
- *         http://www.reficio.org
- * @since 1.1.0
- */
-class AetherEclipseFacadeTest extends AbstractAetherFacadeTest {
-    @Override
-    AetherFacade facade() {
-        return new AetherEclipseFacade()
-    }
-
-    @Override
-    String expectedPackage() {
-        return "org.eclipse.aether."
+class FileBinaryCategory {
+    def static leftShift(File file, URL url) {
+        url.withInputStream { is ->
+            file.withOutputStream { os ->
+                def bs = new BufferedOutputStream(os)
+                bs << is
+            }
+        }
     }
 }
+

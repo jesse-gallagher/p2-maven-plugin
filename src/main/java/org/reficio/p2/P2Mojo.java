@@ -37,7 +37,6 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.AbstractMojoExecutionException;
@@ -424,7 +423,7 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
         
         if(p2features != null) {
         	for(EclipseArtifact artifact : p2features) {
-        		String[] idparts = StringUtils.split(artifact.getId(), ':');
+        		String[] idparts = StringUtil.splitString(artifact.getId(), ':');
     			if(idparts.length != 2) {
     				throw new IllegalArgumentException("Illegal artifact ID; expected format is bundleId:version - " + artifact.getId());
     			}
@@ -589,7 +588,7 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
     }
 
     private ArtifactBundler getArtifactBundler() {
-        return new AquteBundler(pedantic);
+        return new AquteBundler(pedantic, false);
     }
 
     private void executeP2PublisherPlugin() throws IOException, MojoExecutionException {
@@ -621,7 +620,7 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
     }
 
     private void prepareCategoryLocationFile() throws IOException {
-        if (StringUtils.isBlank(categoryFileURL)) {
+        if (StringUtil.isEmpty(categoryFileURL)) {
             InputStream is = getClass().getResourceAsStream(DEFAULT_CATEGORY_CLASSPATH_LOCATION + DEFAULT_CATEGORY_FILE);
             File destinationFolder = new File(destinationDirectory);
             destinationFolder.mkdirs();

@@ -16,13 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.reficio.p2.resolver.maven.impl;
+package org.reficio.p2.resolver.maven.impl
 
-import java.text.MessageFormat;
-
-import org.reficio.p2.resolver.maven.impl.facade.AetherEclipseFacade;
-import org.reficio.p2.resolver.maven.impl.facade.AetherFacade;
-import org.reficio.p2.resolver.maven.impl.facade.AetherSonatypeFacade;
+import org.reficio.p2.resolver.maven.impl.facade.AetherEclipseFacade
+import org.reficio.p2.resolver.maven.impl.facade.AetherFacade
+import org.reficio.p2.resolver.maven.impl.facade.AetherSonatypeFacade
 
 /**
  * @author Tom Bujok (tom.bujok@gmail.com)<br>
@@ -30,14 +28,16 @@ import org.reficio.p2.resolver.maven.impl.facade.AetherSonatypeFacade;
  *         http://www.reficio.org
  * @since 1.1.0
  */
-public class Aether {
-	public static AetherFacade facade(Object repositorySystemSession) {
-		if(repositorySystemSession.getClass().getCanonicalName().contains("org.eclipse")) { //$NON-NLS-1$
-			return new AetherEclipseFacade();
-		} else if(repositorySystemSession.getClass().getCanonicalName().contains("org.sonatype")) { //$NON-NLS-1$
-			return new AetherSonatypeFacade();
-		} else {
-			throw new IllegalArgumentException(MessageFormat.format("Unhandled repository type: {0}", repositorySystemSession.getClass().getName()));
-		}
-	}
+class Aether {
+
+    static AetherFacade facade(def repositorySystemSession) {
+        if (repositorySystemSession.getClass().getCanonicalName().contains("org.eclipse")) {
+            return new AetherEclipseFacade()
+        } else if (repositorySystemSession.getClass().getCanonicalName().contains("org.sonatype")) {
+            return new AetherSonatypeFacade()
+        } else {
+            throw new RuntimeException("Fuck you Maven!")
+        }
+    }
+
 }
