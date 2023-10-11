@@ -304,7 +304,7 @@ public class P2Mojo extends AbstractMojo implements Contextualizable {
             if(archiveSite) {
             	archiveSite();
             }
-            //cleanupEnvironment();
+            cleanupEnvironment();
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {

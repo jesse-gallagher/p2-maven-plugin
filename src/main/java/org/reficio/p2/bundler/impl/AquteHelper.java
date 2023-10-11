@@ -60,6 +60,7 @@ public class AquteHelper {
 
     private static void setAnalyzerOptions(Analyzer analyzer, boolean pedantic) {
         analyzer.setPedantic(pedantic);
+        analyzer.set(Analyzer.IGNORE_PACKAGE, "META-INF");
     }
 
     private static void setPackageOptions(Analyzer analyzer) {
