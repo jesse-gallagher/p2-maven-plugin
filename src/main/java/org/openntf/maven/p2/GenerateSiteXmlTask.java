@@ -34,13 +34,12 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipInputStream;
 
 import org.apache.maven.plugin.logging.Log;
+import org.openntf.maven.p2.utils.P2DomUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import com.ibm.commons.util.StringUtil;
-import com.ibm.commons.xml.DOMUtil;
-import com.ibm.commons.xml.XMLException;
 
 /**
  * Generates an old-style "site.xml" file for the provided p2 repository directory.
@@ -77,14 +76,14 @@ public class GenerateSiteXmlTask implements Runnable {
 			}
 			
 			try {
-				Document doc = DOMUtil.createDocument();
-				Element root = DOMUtil.createElement(doc, "site"); //$NON-NLS-1$
+				Document doc = P2DomUtil.createDocument();
+				Element root = P2DomUtil.createElement(doc, "site"); //$NON-NLS-1$
 				
 				// Create the category entry if applicable
 				String category = this.category;
 				Set<String> createdCategories = new HashSet<>();
 				if(StringUtil.isNotEmpty(category)) {
-					Element categoryDef = DOMUtil.createElement(doc, root, "category-def"); //$NON-NLS-1$
+					Element categoryDef = P2DomUtil.createElement(root, "category-def"); //$NON-NLS-1$
 					categoryDef.setAttribute("name", category); //$NON-NLS-1$
 					categoryDef.setAttribute("label", category); //$NON-NLS-1$
 				}
@@ -93,7 +92,7 @@ public class GenerateSiteXmlTask implements Runnable {
 				Path contentFile = p2Directory.resolve("content.xml"); //$NON-NLS-1$
 				if(Files.isRegularFile(contentFile)) {
 					try(InputStream is = Files.newInputStream(contentFile)) {
-						content = DOMUtil.createDocument(is);
+						content = P2DomUtil.createDocument(is);
 					}
 				} else {
 					// Check for content.jar
@@ -102,13 +101,13 @@ public class GenerateSiteXmlTask implements Runnable {
 						try(InputStream is = Files.newInputStream(contentFile)) {
 							try(ZipInputStream zis = new ZipInputStream(is)) {
 								zis.getNextEntry();
-								content = DOMUtil.createDocument(zis);
+								content = P2DomUtil.createDocument(zis);
 							}
 						}
 					}
 				}
 				if(content == null) {
-					content = DOMUtil.createDocument();
+					content = P2DomUtil.createDocument();
 				}
 
 				List<Path> featureFiles = Files.list(features)
@@ -126,32 +125,32 @@ public class GenerateSiteXmlTask implements Runnable {
 					String featureName = matcher.group(1);
 					String version = matcher.group(2);
 					
-					Element featureElement = DOMUtil.createElement(doc, root, "feature"); //$NON-NLS-1$
+					Element featureElement = P2DomUtil.createElement(root, "feature"); //$NON-NLS-1$
 					String url = "features/" + feature.getFileName(); //$NON-NLS-1$
 					featureElement.setAttribute("url", url); //$NON-NLS-1$
 					featureElement.setAttribute("id", featureName); //$NON-NLS-1$
 					featureElement.setAttribute("version", version); //$NON-NLS-1$
 					
 					if(StringUtil.isNotEmpty(category)) {
-						Element categoryElement = DOMUtil.createElement(doc, featureElement, "category"); //$NON-NLS-1$
+						Element categoryElement = P2DomUtil.createElement(featureElement, "category"); //$NON-NLS-1$
 						categoryElement.setAttribute("name", category); //$NON-NLS-1$
 					} else {
 						// See if it's referenced in any content.xml features
-						Object[] matches = DOMUtil.nodes(content, StringUtil.format("/repository/units/unit/requires/required[@name='{0}']", featureName + ".feature.group")); //$NON-NLS-1$
-						if(matches.length > 0) {
-							for(Object match : matches) {
+						List<Node> matches = P2DomUtil.nodes(content, StringUtil.format("/repository/units/unit/requires/required[@name='{0}']", featureName + ".feature.group")); //$NON-NLS-1$
+						if(!matches.isEmpty()) {
+							for(Node match : matches) {
 								if(match instanceof Element) {
 									Element matchEl = (Element)match;
 									Node unit = matchEl.getParentNode().getParentNode();
 									// Make sure the parent is a category
-									boolean isCategory = DOMUtil.node(unit, "properties/property[@name='org.eclipse.equinox.p2.type.category']") != null; //$NON-NLS-1$
+									boolean isCategory = P2DomUtil.node(unit, "properties/property[@name='org.eclipse.equinox.p2.type.category']") != null; //$NON-NLS-1$
 									if(isCategory) {
-										String categoryName = DOMUtil.value(unit, "properties/property[@name='org.eclipse.equinox.p2.name']/@value"); //$NON-NLS-1$
-										Element categoryElement = DOMUtil.createElement(doc, featureElement, "category"); //$NON-NLS-1$
+										String categoryName = P2DomUtil.node(unit, "properties/property[@name='org.eclipse.equinox.p2.name']").get().getTextContent(); //$NON-NLS-1$
+										Element categoryElement = P2DomUtil.createElement(featureElement, "category"); //$NON-NLS-1$
 										categoryElement.setAttribute("name", categoryName); //$NON-NLS-1$
 
 										if(!createdCategories.contains(categoryName)) {
-											Element categoryDef = DOMUtil.createElement(doc, root, "category-def"); //$NON-NLS-1$
+											Element categoryDef = P2DomUtil.createElement(root, "category-def"); //$NON-NLS-1$
 											categoryDef.setAttribute("name", categoryName); //$NON-NLS-1$
 											categoryDef.setAttribute("label", categoryName); //$NON-NLS-1$
 											createdCategories.add(categoryName);
@@ -164,7 +163,7 @@ public class GenerateSiteXmlTask implements Runnable {
 					}
 				}
 				
-				String xml = DOMUtil.getXMLString(doc, false, true);
+				String xml = P2DomUtil.getXmlString(doc, null);
 				Path output = p2Directory.resolve("site.xml"); //$NON-NLS-1$
 				try(Writer w = Files.newBufferedWriter(output, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
 					w.write(xml);
@@ -173,7 +172,7 @@ public class GenerateSiteXmlTask implements Runnable {
 				}
 				
 				log.info(StringUtil.format("Wrote site.xml contents to {0}", output));
-			} catch(XMLException | IOException e) {
+			} catch(IOException e) {
 				throw new RuntimeException("Exception while building site.xml document", e);
 			}
 		}
