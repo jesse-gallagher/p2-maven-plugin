@@ -145,7 +145,7 @@ public class GenerateSiteXmlTask implements Runnable {
 									// Make sure the parent is a category
 									boolean isCategory = P2DomUtil.node(unit, "properties/property[@name='org.eclipse.equinox.p2.type.category']") != null; //$NON-NLS-1$
 									if(isCategory) {
-										String categoryName = P2DomUtil.node(unit, "properties/property[@name='org.eclipse.equinox.p2.name']").get().getTextContent(); //$NON-NLS-1$
+										String categoryName = P2DomUtil.node(unit, "properties/property[@name='org.eclipse.equinox.p2.name']/@value").get().getNodeValue(); //$NON-NLS-1$
 										Element categoryElement = P2DomUtil.createElement(featureElement, "category"); //$NON-NLS-1$
 										categoryElement.setAttribute("name", categoryName); //$NON-NLS-1$
 
