@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -170,6 +171,8 @@ public class FeatureBuilder {
 				pluginElement.setAttribute("install-size", "0");  //TODO 
 				pluginElement.setAttribute("version", version);
 				pluginElement.setAttribute("unpack", unpack ? "true" : "false");
+			} catch(IOException e) {
+				throw new IOException(MessageFormat.format("Encountered exception processing plugin {0}", plugin), e);
 			}
 		}
 	}
